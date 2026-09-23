@@ -1,215 +1,189 @@
-# Hexapod Dynamixel Controller
+# ASHIBOT
 
-Program kontrol gerak robot **hexapod** berbasis C++ menggunakan **Dynamixel SDK**. Program ini menggunakan metode **Inverse Kinematics (IK)** untuk mengubah koordinat Cartesian kaki robot menjadi sudut servo, kemudian mengirimkan perintah posisi ke Dynamixel menggunakan **Sync Write**.
+Program kontrol robot hexapod berbasis C++ yang menggunakan:
 
-Repository:
+* Dynamixel SDK
+* OpenCV 4
+* NVIDIA CUDA
+* NVIDIA TensorRT
+* libgpiod
+* C++17
 
-[https://github.com/NyomanSugiarte/pakmang_lastCH](https://github.com/NyomanSugiarte/pakmang_lastCH?utm_source=chatgpt.com)
+Project memiliki dua program utama:
 
----
+| Target    | Fungsi                     |
+| --------- | -------------------------- |
+| `ashibot` | Program utama robot        |
 
-## 1. Fitur
-
-Program ini memiliki beberapa fungsi utama:
-
-* Kontrol 18 servo Dynamixel untuk robot hexapod.
-* Inverse Kinematics 3-DOF untuk setiap kaki.
-* Perhitungan koordinat Cartesian `X`, `Y`, dan `Z`.
-* Trajectory kaki untuk gerakan berjalan.
-* Tripod gait.
-* Sync Write untuk mengirim posisi beberapa servo secara bersamaan.
-* Pengaturan kecepatan, tinggi badan, panjang langkah, dan tinggi langkah.
-* Torque ON/OFF pada servo Dynamixel.
-* Komunikasi menggunakan Dynamixel Protocol 1.0.
-
-Program utama menjalankan robot dalam mode **Forward / tripod gait**. Pada `main.cpp`, parameter awal yang digunakan adalah:
-
-```cpp
-double speed = 1.5;
-double body_height = 45.0;
-double step_length = 5.0;
-double h_step = z_offset + (body_height * 0.4);
-```
-
-Kemudian robot melakukan:
-
-```cpp
-StandUp(body_height, 2.0, 2.0);
-Forward(speed, body_height, step_length, h_step);
-```
 
 ---
 
-# 2. Struktur Repository
+# 1. System Requirements
 
-```text
-pakmang_lastCH/
-│
-├── main.cpp
-│
-├── IK2.cpp
-├── IK2.h
-│
-├── Gmini_Tr.cpp
-├── Gmini_Tr.h
-│
-├── movement.cpp
-├── movement.h
-│
-└── README.md
-```
+Project ini ditujukan untuk berjalan pada **Linux NVIDIA Jetson**, khususnya Jetson Nano.
 
-### `main.cpp`
+Software yang diperlukan:
 
-Program utama yang melakukan:
-
-1. Inisialisasi Dynamixel.
-2. Membuka komunikasi dengan servo.
-3. Mengaktifkan torque.
-4. Mengatur parameter gerakan.
-5. Menjalankan posisi berdiri.
-6. Menjalankan tripod gait.
-7. Mematikan torque ketika program selesai.
-
-### `IK2.cpp / IK2.h`
-
-Berisi fungsi komunikasi Dynamixel dan perhitungan inverse kinematics.
-
-Konfigurasi utama pada `IK2.h`:
-
-```cpp
-#define BAUDRATE 1000000
-#define DEVICENAME "/dev/ttyUSB0"
-#define PROTOCOL_VERSION 1.0
-```
-
-Panjang link kaki:
-
-```cpp
-const double J1L = 25.0;
-const double J2L = 50.0;
-const double J3L = 75.0;
-```
-
-### `Gmini_Tr.cpp / Gmini_Tr.h`
-
-Berisi trajectory generator untuk pergerakan kaki.
-
-Trajectory menghitung posisi kaki berdasarkan parameter:
-
-```text
-X
-Y
-Z
-step height
-fase swing
-```
-
-Kemudian koordinat tersebut dikirim ke fungsi inverse kinematics.
-
-Program juga menggunakan trajectory **swing** dan **stance** untuk membentuk tripod gait.
-
-### `movement.cpp / movement.h`
-
-Berisi fungsi pergerakan robot seperti:
-
-```cpp
-Forward()
-Backward()
-```
-
-Tripod gait menggunakan dua kelompok kaki:
-
-```cpp
-kaki_A = {0, 2, 4};
-kaki_B = {1, 3, 5};
-```
-
-Setiap kelompok bergantian antara fase `Swing` dan `Stance`.
-
-Perintah posisi kemudian dikirim menggunakan Sync Write setiap sekitar 10 ms.
-
----
-
-# 3. Hardware
-
-Program ini dibuat untuk robot hexapod dengan konfigurasi:
-
-| Komponen       | Konfigurasi              |
-| -------------- | ------------------------ |
-| Controller     | Linux SBC / Jetson       |
-| Servo          | Dynamixel AX-Series      |
-| Jumlah servo   | 18                       |
-| Servo per kaki | 3                        |
-| Jumlah kaki    | 6                        |
-| Protocol       | Dynamixel Protocol 1.0   |
-| Baudrate       | 1,000,000                |
-| Interface      | USB Dynamixel Controller |
-| Port default   | `/dev/ttyUSB0`           |
-
-Program menggunakan ID servo:
-
-```text
-1 - 18
-```
-
-Setiap kaki terdiri dari tiga servo:
-
-```text
-Coxa
-Femur
-Tibia
-```
-
-> **Perhatian:** Pastikan konfigurasi ID, baudrate, protocol, dan wiring sesuai dengan robot sebelum menjalankan program. Program akan mengaktifkan torque servo.
-
----
-
-# 4. Software Requirements
-
-Sistem membutuhkan:
-
-* Linux
+* Ubuntu
 * GCC / G++
+* Make
 * Git
-* Dynamixel SDK C++
-* pthread / C++ thread support
-* Dynamixel USB interface
+* OpenCV 4
+* CUDA
+* TensorRT
+* Dynamixel SDK
+* libgpiod
+* pthread
 
-Untuk Ubuntu/Debian, install compiler dan Git:
+---
+
+# 2. Clone Repository
+
+Clone repository:
+
+```bash
+git clone https://github.com/NyomanSugiarte/pakmang_lastCH.git
+```
+
+Masuk ke folder project:
+
+```bash
+cd pakmang_lastCH
+```
+
+---
+
+# 3. Install Compiler dan Build Tools
+
+Install compiler dan Make:
 
 ```bash
 sudo apt update
-sudo apt install build-essential git
+sudo apt install build-essential make git
 ```
 
-Cek compiler:
+Cek:
 
 ```bash
 g++ --version
+make --version
+```
+
+Project menggunakan standar:
+
+```text
+C++17
+```
+
+yang ditentukan pada Makefile:
+
+```makefile
+CXXFLAGS := -std=c++17 ...
 ```
 
 ---
 
-# 5. Install Dynamixel SDK
+# 4. Install OpenCV
 
-Program menggunakan header:
+Project menggunakan OpenCV 4 melalui `pkg-config`.
 
-```cpp
-#include <dynamixel_sdk/dynamixel_sdk.h>
+Cek apakah OpenCV sudah tersedia:
+
+```bash
+pkg-config --modversion opencv4
 ```
 
-dan API:
+Contoh output:
 
-```cpp
-dynamixel::PortHandler
-dynamixel::PacketHandler
-dynamixel::GroupSyncWrite
+```text
+4.x.x
 ```
 
-SDK harus sudah ter-install sebelum melakukan compile.
+Jika muncul:
 
-Clone Dynamixel SDK:
+```text
+Package opencv4 was not found
+```
+
+berarti OpenCV 4 belum terdeteksi oleh `pkg-config`.
+
+Install development package:
+
+```bash
+sudo apt install libopencv-dev
+```
+
+Kemudian cek kembali:
+
+```bash
+pkg-config --modversion opencv4
+```
+
+---
+
+# 5. Install libgpiod
+
+Project menggunakan GPIO melalui library `libgpiod`.
+
+Install:
+
+```bash
+sudo apt install libgpiod-dev gpiod
+```
+
+Cek library:
+
+```bash
+pkg-config --modversion libgpiod
+```
+
+> Jika sistem tidak menyediakan `libgpiod` melalui pkg-config, library tetap harus tersedia karena program melakukan linking dengan `-lgpiod`.
+
+---
+
+# 6. Dynamixel SDK
+
+Project menggunakan **Dynamixel SDK C++**.
+
+Pada Makefile, lokasi SDK adalah:
+
+```text
+/home/ashibot/DynamixelSDK
+```
+
+Header SDK:
+
+```text
+/home/ashibot/DynamixelSDK/c++/include
+```
+
+Library:
+
+```text
+/home/ashibot/DynamixelSDK/c++/build/linux_sbc
+```
+
+Makefile menggunakan:
+
+```makefile
+-I/home/ashibot/DynamixelSDK/c++/include
+```
+
+dan:
+
+```makefile
+-L/home/ashibot/DynamixelSDK/c++/build/linux_sbc
+```
+
+serta library:
+
+```makefile
+-ldxl_sbc_cpp
+```
+
+## Install SDK
+
+Jika SDK belum ada:
 
 ```bash
 cd ~
@@ -222,235 +196,563 @@ Masuk ke folder C++:
 cd ~/DynamixelSDK/c++
 ```
 
-Kemudian build SDK sesuai dengan platform Linux yang digunakan.
+Build SDK sesuai platform Linux yang digunakan.
 
-Setelah SDK berhasil di-build, pastikan library Dynamixel tersedia.
-
-Contoh:
+Setelah selesai, pastikan file berikut tersedia:
 
 ```bash
-find ~/DynamixelSDK -name "*.so"
+ls ~/DynamixelSDK/c++/build/linux_sbc/
+```
+
+Harus terdapat library:
+
+```text
+libdxl_sbc_cpp.so
+```
+
+Cek:
+
+```bash
+find ~/DynamixelSDK -name "libdxl_sbc_cpp.so"
 ```
 
 ---
 
-# 6. Clone Repository
+# 7. CUDA
 
-Clone repository:
+Project menggunakan CUDA.
 
-```bash
-cd ~
-git clone https://github.com/NyomanSugiarte/pakmang_lastCH.git
+Makefile menggunakan:
+
+```makefile
+-I/usr/local/cuda/include
 ```
 
-Masuk ke folder:
+dan:
 
-```bash
-cd ~/pakmang_lastCH
+```makefile
+-L/usr/local/cuda/lib64
 ```
 
-Cek file:
+Cek instalasi CUDA:
 
 ```bash
-ls
+nvcc --version
 ```
 
-Output yang diharapkan:
+Pastikan directory berikut tersedia:
 
-```text
-Gmini_Tr.cpp
-Gmini_Tr.h
-IK2.cpp
-IK2.h
-README.md
-main.cpp
-movement.cpp
-movement.h
+```bash
+ls /usr/local/cuda/include
+```
+
+dan:
+
+```bash
+ls /usr/local/cuda/lib64
 ```
 
 ---
 
-# 7. Compile Program
+# 8. TensorRT
 
-## Cara 1 — Jika Dynamixel SDK ter-install di system
+Program YOLO menggunakan NVIDIA TensorRT.
 
-Jika header Dynamixel SDK berada di:
+Makefile melakukan linking dengan:
+
+```makefile
+-lnvinfer
+-lnvonnxparser
+-lncudart
+```
+
+Library yang dibutuhkan:
 
 ```text
-/usr/local/include
+libnvinfer.so
+libnvonnxparser.so
+libcudart.so
 ```
 
-dan library berada di:
+Cek:
+
+```bash
+ls /usr/lib/aarch64-linux-gnu/libnvinfer.so*
+```
+
+dan:
+
+```bash
+ls /usr/lib/aarch64-linux-gnu/libnvonnxparser.so*
+```
+
+Lokasi dapat berbeda tergantung versi JetPack/Jetson yang digunakan.
+
+---
+
+# 9. Struktur Project
+
+Struktur source code utama:
 
 ```text
-/usr/local/lib
-```
-
-compile:
-
-```bash
-g++ -std=c++17 \
-    main.cpp \
-    IK2.cpp \
-    Gmini_Tr.cpp \
-    movement.cpp \
-    -o ashibot \
-    -ldxl_x64_c++ \
-    -lpthread
-```
-
-Kemudian cek apakah executable berhasil dibuat:
-
-```bash
-ls -lh ashibot
+pakmang_lastCH/
+│
+├── Makefile
+├── main.cpp
+├── ong.cpp
+│
+├── ong-mission/
+│   ├── case1.cpp
+│   └── case2.cpp
+│
+├── src/
+│   │
+│   ├── arm/
+│   │   ├── arm.cpp
+│   │   └── ServoController.cpp
+│   │
+│   ├── cam/
+│   │   └── Camera.cpp
+│   │
+│   ├── heading/
+│   │   └── kompas.cpp
+│   │
+│   ├── movement/
+│   │   ├── DynamixelController.cpp
+│   │   ├── Gmini_Tr.cpp
+│   │   ├── IK2.cpp
+│   │   └── movement.cpp
+│   │
+│   └── yolo/
+│       └── YoloDetector.cpp
+│
+└── include/
 ```
 
 ---
 
-# 8. Compile pada Jetson Nano
+# 10. Compile Program
 
-Jika menggunakan **Jetson Nano** dan library Dynamixel SDK berada pada folder build Linux SBC, gunakan lokasi library SDK sesuai instalasi.
-
-Contoh struktur:
-
-```text
-~/DynamixelSDK/
-└── c++/
-    ├── include/
-    │   └── dynamixel_sdk/
-    └── build/
-        └── linux_sbc/
-            └── libdxl_sbc_cpp.so
-```
-
-Compile dengan:
+Setelah semua dependency tersedia, cukup jalankan:
 
 ```bash
-g++ -std=c++17 \
-    main.cpp \
-    IK2.cpp \
-    Gmini_Tr.cpp \
-    movement.cpp \
-    -I$HOME/DynamixelSDK/c++/include \
-    -L$HOME/DynamixelSDK/c++/build/linux_sbc \
-    -Wl,-rpath,$HOME/DynamixelSDK/c++/build/linux_sbc \
-    -ldxl_sbc_cpp \
-    -lpthread \
-    -o ashibot
+make
 ```
 
-Jika berhasil:
-
-```bash
-ls -lh ashibot
-```
-
-Akan muncul executable:
+Perintah tersebut akan membuat executable:
 
 ```text
 ashibot
 ```
 
+Prosesnya secara otomatis:
+
+```text
+.cpp
+  ↓
+.o
+  ↓
+Linking
+  ↓
+ashibot
+```
+
+Source yang di-compile untuk program utama:
+
+```text
+main.cpp
+src/arm/arm.cpp
+src/arm/ServoController.cpp
+src/cam/Camera.cpp
+src/heading/kompas.cpp
+src/movement/DynamixelController.cpp
+src/movement/Gmini_Tr.cpp
+src/movement/IK2.cpp
+src/movement/movement.cpp
+src/yolo/YoloDetector.cpp
+```
+
 ---
 
-# 9. Jika Library Tidak Ditemukan
+# 11. Menjalankan Program ASHIBOT
 
-Jika muncul error:
+Setelah compile berhasil:
+
+```bash
+make run
+```
+
+Perintah `make run` menjalankan:
+
+```bash
+./ashibot
+```
+
+dengan `LD_LIBRARY_PATH` yang sudah diarahkan ke Dynamixel SDK:
+
+```bash
+LD_LIBRARY_PATH=/home/ashibot/DynamixelSDK/c++/build/linux_sbc:$LD_LIBRARY_PATH ./ashibot
+```
+
+Hal ini diperlukan agar sistem dapat menemukan:
+
+```text
+libdxl_sbc_cpp.so
+```
+
+---
+
+# 12. Compile Program ONG
+
+Selain program utama, terdapat target khusus:
+
+```text
+ong
+```
+
+Untuk compile:
+
+```bash
+make ong
+```
+
+Executable yang dihasilkan:
+
+```text
+ong
+```
+
+Source yang digunakan:
+
+```text
+ong.cpp
+ong-mission/case1.cpp
+ong-mission/case2.cpp
+src/arm/arm.cpp
+src/arm/ServoController.cpp
+src/cam/Camera.cpp
+src/heading/kompas.cpp
+src/movement/DynamixelController.cpp
+src/movement/Gmini_Tr.cpp
+src/movement/IK2.cpp
+src/movement/movement.cpp
+src/yolo/YoloDetector.cpp
+```
+
+---
+
+# 13. Menjalankan Program ONG
+
+Setelah compile:
+
+```bash
+make run-ong
+```
+
+Perintah tersebut menjalankan:
+
+```bash
+./ong
+```
+
+dengan library Dynamixel SDK:
+
+```text
+/home/ashibot/DynamixelSDK/c++/build/linux_sbc
+```
+
+---
+
+# 14. Membersihkan Hasil Compile
+
+Untuk menghapus seluruh file object dan executable:
+
+```bash
+make clean
+```
+
+Perintah ini menjalankan:
+
+```bash
+rm -f $(OBJS) $(TARGET)
+```
+
+Jika sebelumnya juga sudah melakukan compile `ong`, dan ingin membersihkan object `ong`, dapat dilakukan manual:
+
+```bash
+rm -f ong ong.o ong-mission/*.o
+```
+
+---
+
+# 15. Perintah Build Lengkap
+
+## Program utama
+
+```bash
+make
+```
+
+Jalankan:
+
+```bash
+make run
+```
+
+---
+
+## Program ONG
+
+Compile:
+
+```bash
+make ong
+```
+
+Jalankan:
+
+```bash
+make run-ong
+```
+
+---
+
+## Clean
+
+```bash
+make clean
+```
+
+---
+
+# 16. Build dari Awal
+
+Jika ingin melakukan build ulang dari kondisi bersih:
+
+```bash
+make clean
+make
+```
+
+Kemudian jalankan:
+
+```bash
+make run
+```
+
+Untuk ONG:
+
+```bash
+make clean
+make ong
+make run-ong
+```
+
+---
+
+# 17. Troubleshooting
+
+## A. Dynamixel SDK tidak ditemukan
+
+Jika muncul:
 
 ```text
 fatal error: dynamixel_sdk/dynamixel_sdk.h: No such file or directory
 ```
 
-berarti compiler belum mengetahui lokasi header SDK.
+pastikan SDK berada di:
 
-Gunakan:
-
-```bash
--I/path/ke/DynamixelSDK/c++/include
+```text
+/home/ashibot/DynamixelSDK
 ```
 
-Contoh:
+Cek:
 
 ```bash
--I$HOME/DynamixelSDK/c++/include
+ls /home/ashibot/DynamixelSDK/c++/include/dynamixel_sdk
+```
+
+Jika menggunakan username berbeda, ubah path pada `Makefile`:
+
+```makefile
+-I/home/USERNAME/DynamixelSDK/c++/include
+```
+
+dan:
+
+```makefile
+-L/home/USERNAME/DynamixelSDK/c++/build/linux_sbc
 ```
 
 ---
+
+## B. `libdxl_sbc_cpp.so` tidak ditemukan
 
 Jika muncul:
 
 ```text
-/usr/bin/ld: cannot find -ldxl_sbc_cpp
+cannot find -ldxl_sbc_cpp
 ```
 
-berarti compiler belum menemukan file library `.so`.
-
-Cari library:
+cek:
 
 ```bash
-find ~/DynamixelSDK -name "libdxl*.so"
+find /home/ashibot/DynamixelSDK -name "libdxl_sbc_cpp.so"
 ```
 
-Misalnya hasilnya:
+Pastikan hasilnya berada di:
 
 ```text
-/home/ashibot/DynamixelSDK/c++/build/linux_sbc/libdxl_sbc_cpp.so
-```
-
-maka tambahkan:
-
-```bash
--L/home/ashibot/DynamixelSDK/c++/build/linux_sbc
+/home/ashibot/DynamixelSDK/c++/build/linux_sbc/
 ```
 
 ---
 
-# 10. Cek Dynamixel USB Port
+## C. Library ditemukan saat compile tetapi tidak saat run
 
-Program secara default menggunakan:
+Jika muncul:
 
-```cpp
-#define DEVICENAME "/dev/ttyUSB0"
+```text
+error while loading shared libraries:
+libdxl_sbc_cpp.so
 ```
 
-Hubungkan U2D2 / USB Dynamixel Controller kemudian cek:
+jalankan menggunakan:
+
+```bash
+make run
+```
+
+Jangan langsung:
+
+```bash
+./ashibot
+```
+
+karena target `run` sudah mengatur:
+
+```bash
+LD_LIBRARY_PATH
+```
+
+---
+
+## D. OpenCV tidak ditemukan
+
+Jika muncul:
+
+```text
+Package opencv4 was not found
+```
+
+cek:
+
+```bash
+pkg-config --modversion opencv4
+```
+
+Kemudian install:
+
+```bash
+sudo apt install libopencv-dev
+```
+
+---
+
+## E. CUDA tidak ditemukan
+
+Cek:
+
+```bash
+nvcc --version
+```
+
+dan:
+
+```bash
+ls /usr/local/cuda
+```
+
+Makefile mengasumsikan CUDA berada di:
+
+```text
+/usr/local/cuda
+```
+
+Jika lokasi berbeda, ubah:
+
+```makefile
+-I/usr/local/cuda/include
+```
+
+dan:
+
+```makefile
+-L/usr/local/cuda/lib64
+```
+
+---
+
+## F. TensorRT tidak ditemukan
+
+Jika muncul:
+
+```text
+cannot find -lnvinfer
+```
+
+atau:
+
+```text
+cannot find -lnvonnxparser
+```
+
+pastikan TensorRT sudah ter-install pada Jetson.
+
+Cek:
+
+```bash
+ldconfig -p | grep nvinfer
+```
+
+dan:
+
+```bash
+ldconfig -p | grep nvonnxparser
+```
+
+---
+
+## G. GPIO tidak ditemukan
+
+Jika muncul:
+
+```text
+cannot find -lgpiod
+```
+
+install:
+
+```bash
+sudo apt install libgpiod-dev gpiod
+```
+
+---
+
+# 18. Permission Dynamixel
+
+Pastikan user mempunyai akses ke USB serial Dynamixel.
+
+Cek device:
 
 ```bash
 ls /dev/ttyUSB*
 ```
 
-Contoh:
+Jika menggunakan:
 
 ```text
 /dev/ttyUSB0
-```
-
-Jika device berbeda, misalnya:
-
-```text
-/dev/ttyUSB1
-```
-
-ubah:
-
-```cpp
-#define DEVICENAME "/dev/ttyUSB1"
-```
-
-di:
-
-```text
-IK2.h
-```
-
----
-
-# 11. Permission USB
-
-Jika muncul:
-
-```text
-Gagal membuka port!
 ```
 
 cek permission:
@@ -459,7 +761,7 @@ cek permission:
 ls -l /dev/ttyUSB0
 ```
 
-Jika user belum memiliki akses serial, tambahkan user ke group `dialout`:
+Tambahkan user ke group `dialout`:
 
 ```bash
 sudo usermod -aG dialout $USER
@@ -467,13 +769,7 @@ sudo usermod -aG dialout $USER
 
 Kemudian logout dan login kembali.
 
-Atau reboot:
-
-```bash
-sudo reboot
-```
-
-Setelah login kembali:
+Cek:
 
 ```bash
 groups
@@ -487,481 +783,140 @@ dialout
 
 ---
 
-# 12. Cek Baudrate
+# 19. Quick Start
 
-Program menggunakan:
-
-```cpp
-#define BAUDRATE 1000000
-```
-
-atau:
-
-```text
-1,000,000 bps
-```
-
-Semua servo yang digunakan harus menggunakan baudrate yang sama.
-
-Jika servo menggunakan baudrate lain, ubah:
-
-```cpp
-#define BAUDRATE 1000000
-```
-
-sesuai konfigurasi Dynamixel.
-
----
-
-# 13. Cek Protocol
-
-Program menggunakan:
-
-```cpp
-#define PROTOCOL_VERSION 1.0
-```
-
-Program ini ditujukan untuk Dynamixel yang menggunakan **Protocol 1.0**.
-
-Pastikan servo yang digunakan mendukung protocol tersebut.
-
----
-
-# 14. Menjalankan Program
-
-Setelah berhasil compile:
-
-```bash
-./ashibot
-```
-
-Program akan menampilkan:
-
-```text
-=========================================
- HEXAPOD TRIPOD GAIT CONTROLLER
-=========================================
-```
-
-Kemudian program melakukan inisialisasi Dynamixel.
-
-Jika komunikasi berhasil:
-
-```text
-[INFO] Komunikasi Dynamixel Berhasil Dibuka.
-```
-
-Program kemudian mengaktifkan torque servo.
-
-Setelah itu robot melakukan:
-
-```text
-Stand Up
-     ↓
-Tripod Gait
-     ↓
-Forward
-```
-
----
-
-# 15. Menghentikan Program
-
-Program `Forward()` berjalan dalam loop:
-
-```cpp
-while (true)
-```
-
-sehingga program akan terus menjalankan robot.
-
-Untuk menghentikan program:
-
-```text
-Ctrl + C
-```
-
-Setelah loop selesai, program akan mematikan torque dan menutup port Dynamixel.
-
----
-
-# 16. Mengubah Parameter Gerakan
-
-Parameter gerakan terdapat di:
-
-```text
-main.cpp
-```
-
-Contoh:
-
-```cpp
-double speed = 1.5;
-double body_height = 45.0;
-double step_length = 5.0;
-double h_step = z_offset + (body_height * 0.4);
-```
-
-### Speed
-
-```cpp
-double speed = 1.5;
-```
-
-Mengatur kecepatan siklus gait.
-
-Nilai lebih besar:
-
-```cpp
-speed = 2.0;
-```
-
-akan membuat siklus gerakan lebih cepat.
-
----
-
-### Body Height
-
-```cpp
-double body_height = 45.0;
-```
-
-Mengatur tinggi koordinat badan robot terhadap kaki.
-
----
-
-### Step Length
-
-```cpp
-double step_length = 5.0;
-```
-
-Mengatur panjang langkah kaki.
-
-Nilai lebih besar menghasilkan perpindahan kaki yang lebih jauh.
-
----
-
-### Step Height
-
-```cpp
-double h_step = z_offset + (body_height * 0.4);
-```
-
-Mengatur tinggi kaki ketika berada pada fase swing.
-
----
-
-# 17. Inverse Kinematics
-
-Panjang link kaki yang digunakan:
-
-```text
-J1 = 25 mm
-J2 = 50 mm
-J3 = 75 mm
-```
-
-Konfigurasi tersebut terdapat di `IK2.h`:
-
-```cpp
-const double J1L = 25.0;
-const double J2L = 50.0;
-const double J3L = 75.0;
-```
-
-Secara umum alur perhitungannya:
-
-```text
-Cartesian Position
-       │
-       ├── X
-       ├── Y
-       └── Z
-       │
-       ▼
-Inverse Kinematics
-       │
-       ├── J1
-       ├── J2
-       └── J3
-       │
-       ▼
-Servo Angle
-       │
-       ▼
-Dynamixel Position
-       │
-       ▼
-Sync Write
-       │
-       ▼
-Servo
-```
-
-Fungsi `CartesianMoveBuffered()` pada `Gmini_Tr.cpp` melakukan perhitungan koordinat Cartesian menjadi sudut joint dan memasukkan hasilnya ke buffer Sync Write.
-
----
-
-# 18. Tripod Gait
-
-Robot menggunakan enam kaki yang dibagi menjadi dua kelompok.
-
-### Group A
-
-```cpp
-int kaki_A[] = {0, 2, 4};
-```
-
-### Group B
-
-```cpp
-int kaki_B[] = {1, 3, 5};
-```
-
-Kelompok A dan B bergerak secara bergantian:
-
-```text
-Cycle 1
-
-Group A → Swing
-Group B → Stance
-
-
-Cycle 2
-
-Group A → Stance
-Group B → Swing
-```
-
-Dengan metode tersebut robot menghasilkan pola **tripod gait**.
-
----
-
-# 19. Sync Write
-
-Program menggunakan:
-
-```cpp
-dynamixel::GroupSyncWrite
-```
-
-dengan:
-
-```cpp
-ADDR_GOAL_POSITION = 30
-```
-
-dan panjang data:
-
-```text
-2 byte
-```
-
-Posisi servo dikonversi dari sudut:
-
-```text
-0° - 360°
-```
-
-menjadi:
-
-```text
-0 - 1023
-```
-
-kemudian dikirim secara bersamaan menggunakan Sync Write.
-
----
-
-# 20. Troubleshooting
-
-## Dynamixel tidak terdeteksi
-
-Cek:
-
-```bash
-ls /dev/ttyUSB*
-```
-
-Kemudian pastikan:
-
-* USB controller terhubung.
-* Kabel Dynamixel terhubung.
-* Power servo aktif.
-* Port sesuai.
-* Baudrate sesuai.
-* Protocol sesuai.
-* ID servo sesuai.
-
----
-
-## `Gagal membuka port!`
-
-Cek:
-
-```bash
-ls -l /dev/ttyUSB0
-```
-
-Kemudian:
-
-```bash
-sudo usermod -aG dialout $USER
-```
-
-Logout/login kembali.
-
----
-
-## Servo tidak bergerak
-
-Periksa:
-
-```text
-Power Dynamixel
-       ↓
-ID servo
-       ↓
-Protocol
-       ↓
-Baudrate
-       ↓
-Torque
-       ↓
-Goal Position
-```
-
-Program menggunakan ID servo 1–18 pada bagian utama untuk mengaktifkan torque.
-
----
-
-## `cannot find -ldxl_sbc_cpp`
-
-Cari library:
-
-```bash
-find ~/DynamixelSDK -name "libdxl*.so"
-```
-
-Kemudian gunakan lokasi folder library tersebut dengan:
-
-```bash
--L/path/library
-```
-
-Contoh:
-
-```bash
--L$HOME/DynamixelSDK/c++/build/linux_sbc
-```
-
----
-
-## Header Dynamixel tidak ditemukan
-
-Error:
-
-```text
-fatal error: dynamixel_sdk/dynamixel_sdk.h:
-No such file or directory
-```
-
-Gunakan:
-
-```bash
--I$HOME/DynamixelSDK/c++/include
-```
-
----
-
-# 21. Clean Build
-
-Untuk compile ulang:
-
-```bash
-rm -f ashibot
-```
-
-kemudian:
-
-```bash
-g++ -std=c++17 \
-    main.cpp \
-    IK2.cpp \
-    Gmini_Tr.cpp \
-    movement.cpp \
-    -I$HOME/DynamixelSDK/c++/include \
-    -L$HOME/DynamixelSDK/c++/build/linux_sbc \
-    -Wl,-rpath,$HOME/DynamixelSDK/c++/build/linux_sbc \
-    -ldxl_sbc_cpp \
-    -lpthread \
-    -o ashibot
-```
-
----
-
-# 22. Ringkasan Build
-
-Jika semua dependency sudah tersedia, proses dari awal:
+Jika seluruh dependency sudah terpasang:
 
 ```bash
 git clone https://github.com/NyomanSugiarte/pakmang_lastCH.git
 cd pakmang_lastCH
+make
+make run
 ```
 
-Compile:
+Untuk program ONG:
 
 ```bash
-g++ -std=c++17 \
-    main.cpp \
-    IK2.cpp \
-    Gmini_Tr.cpp \
-    movement.cpp \
-    -I$HOME/DynamixelSDK/c++/include \
-    -L$HOME/DynamixelSDK/c++/build/linux_sbc \
-    -Wl,-rpath,$HOME/DynamixelSDK/c++/build/linux_sbc \
-    -ldxl_sbc_cpp \
-    -lpthread \
-    -o ashibot
-```
-
-Jalankan:
-
-```bash
-./ashibot
+make ong
+make run-ong
 ```
 
 ---
 
-# 23. Catatan Keselamatan
+# 20. Build Flow
 
-Program ini secara langsung mengaktifkan torque pada servo Dynamixel.
-
-Sebelum menjalankan program:
-
-1. Pastikan robot berada pada posisi yang aman.
-2. Pastikan tidak ada benda yang menghalangi kaki.
-3. Pastikan supply servo mencukupi.
-4. Pastikan ID servo benar.
-5. Pastikan arah pemasangan servo sesuai konfigurasi IK.
-6. Untuk pengujian pertama, angkat robot dari lantai agar kaki tidak langsung memberikan gaya ke permukaan.
-7. Siapkan akses `Ctrl+C` untuk menghentikan program.
-
-**Jangan menjalankan robot pertama kali dengan kecepatan tinggi sebelum konfigurasi IK dan arah servo diverifikasi.**
+```text
+                 SOURCE CODE
+                     │
+                     ▼
+              ┌──────────────┐
+              │    Makefile  │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │     g++      │
+              │    C++17     │
+              └──────┬───────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │ Object Files │
+              │    (*.o)     │
+              └──────┬───────┘
+                     │
+                     ▼
+             ┌─────────────────┐
+             │     Linking     │
+             │                 │
+             │ Dynamixel SDK   │
+             │ CUDA            │
+             │ TensorRT        │
+             │ OpenCV          │
+             │ libgpiod        │
+             │ pthread         │
+             └────────┬────────┘
+                      │
+             ┌────────┴────────┐
+             ▼                 ▼
+        ┌─────────┐       ┌─────────┐
+        │ ashibot │       │   ong   │
+        └─────────┘       └─────────┘
+```
 
 ---
 
-# 24. Author
+# 21. Dependency Summary
 
-**Nyoman Sugiarte**
+| Dependency    | Kegunaan                   |
+| ------------- | -------------------------- |
+| GCC / G++     | Compile C++                |
+| Make          | Build automation           |
+| C++17         | Standard bahasa C++        |
+| Dynamixel SDK | Komunikasi servo Dynamixel |
+| OpenCV 4      | Pemrosesan kamera          |
+| CUDA          | GPU acceleration           |
+| TensorRT      | Inferensi YOLO             |
+| ONNX Parser   | Membaca model ONNX         |
+| libgpiod      | Kontrol GPIO               |
+| pthread       | Multithreading             |
 
-Repository:
+---
+
+# 22. Makefile Targets
+
+| Command        | Fungsi                                |
+| -------------- | ------------------------------------- |
+| `make`         | Compile `ashibot`                     |
+| `make run`     | Compile dan menjalankan `ashibot`     |
+| `make ong`     | Compile `ong`                         |
+| `make run-ong` | Compile dan menjalankan `ong`         |
+| `make clean`   | Menghapus object dan executable utama |
+
+---
+
+# 23. Hardware
+
+Program dirancang untuk sistem robot hexapod yang menggunakan:
+
+```text
+Jetson
+   │
+   ├── Camera
+   │
+   ├── GPIO
+   │
+   ├── Dynamixel SDK
+   │       │
+   │       ▼
+   │      U2D2
+   │       │
+   │       ▼
+   │   Dynamixel
+   │
+   └── TensorRT / YOLO
+```
+
+Pastikan power supply servo sudah tersedia sebelum menjalankan program.
+
+---
+
+# 24. Important Notes
+
+Program dapat mengaktifkan actuator secara langsung. Sebelum menjalankan:
+
+1. Pastikan seluruh servo terpasang dengan benar.
+2. Pastikan ID Dynamixel sesuai.
+3. Pastikan power servo tersedia.
+4. Pastikan komunikasi Dynamixel dapat digunakan.
+5. Pastikan robot berada pada posisi aman.
+6. Untuk pengujian pertama, lakukan pengujian tanpa beban pada kaki.
+7. Gunakan `Ctrl+C` jika robot bergerak tidak sesuai.
+
+---
+
+# 25. Repository
+
+GitHub:
 
 https://github.com/NyomanSugiarte/pakmang_lastCH
-
----
-
-## License
-
-Tambahkan informasi lisensi di repository apabila proyek ini akan didistribusikan secara publik.
